@@ -1,5 +1,0 @@
-# ninja log v6
-3	758	7593281027019457	CMakeFiles/FlappyBird.dir/src/main.cpp.obj	d80856a79fce9c94
-13	871	7593281027130585	CMakeFiles/FlappyBird.dir/src/Game.cpp.obj	2171ed90a198c764
-871	1012	7593281035709370	FlappyBird.exe	52624e09bee9d556
-1	204	7593284041357171	build.ninja	8f6f9528afe33cf0

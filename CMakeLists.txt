@@ -1,45 +1,72 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.20)
 project(FlappyBird)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Пути к SDL2 и SDL2_ttf
-set(SDL2_PATH "${CMAKE_SOURCE_DIR}/SDL2/x86_64-w64-mingw32")
-set(SDL2_TTF_PATH "${CMAKE_SOURCE_DIR}/SDL2_ttf/x86_64-w64-mingw32")
+# Установка путей к SDL2 и дополнительным библиотекам
+set(SDL2_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2")
+set(SDL2_IMAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2_image")
+set(SDL2_TTF_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2_ttf")
+set(SDL2_MIXER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2_mixer")
 
-# Включаем заголовочные файлы
+# Добавление путей для заголовочных файлов
 include_directories(
-        ${SDL2_PATH}/include/SDL2
-        ${SDL2_TTF_PATH}/include/SDL2
-        ${PROJECT_SOURCE_DIR}/src
+        ${SDL2_DIR}/x86_64-w64-mingw32/include/SDL2
+        ${SDL2_IMAGE_DIR}/x86_64-w64-mingw32/include/SDL2
+        ${SDL2_TTF_DIR}/x86_64-w64-mingw32/include/SDL2
+        ${SDL2_MIXER_DIR}/x86_64-w64-mingw32/include/SDL2
+        ${CMAKE_SOURCE_DIR}/src
 )
 
-add_executable(${PROJECT_NAME}
+# Добавление путей для библиотек
+link_directories(
+        ${SDL2_DIR}/x86_64-w64-mingw32/lib
+        ${SDL2_IMAGE_DIR}/x86_64-w64-mingw32/lib
+        ${SDL2_TTF_DIR}/x86_64-w64-mingw32/lib
+        ${SDL2_MIXER_DIR}/x86_64-w64-mingw32/lib
+)
+
+# Добавление исходных файлов
+set(SOURCES
         src/main.cpp
         src/Game.cpp
 )
 
-# Подключаем библиотеки
+set(HEADERS
+        src/Game.h
+)
+
+# Создание исполняемого файла
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+
+# Линковка библиотек
 target_link_libraries(${PROJECT_NAME}
         mingw32
-        ${SDL2_PATH}/lib/libSDL2main.a
-        ${SDL2_PATH}/lib/libSDL2.dll.a
-        ${SDL2_PATH}/lib/libSDL2_image.dll.a
-        ${SDL2_TTF_PATH}/lib/libSDL2_ttf.dll.a
+        SDL2main
+        SDL2
+        SDL2_image
+        SDL2_ttf
+        SDL2_mixer
 )
 
-# Копируем необходимые DLL файлы (убрали zlib1.dll)
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${SDL2_PATH}/bin/SDL2.dll
-        ${SDL2_PATH}/bin/SDL2_image.dll
-        ${SDL2_TTF_PATH}/bin/SDL2_ttf.dll
-        ${CMAKE_BINARY_DIR}
-)
+# Копирование DLL файлов
+if(WIN32)
+    foreach(DLL
+            "${SDL2_DIR}/x86_64-w64-mingw32/bin/SDL2.dll"
+            "${SDL2_IMAGE_DIR}/x86_64-w64-mingw32/bin/SDL2_image.dll"
+            "${SDL2_TTF_DIR}/x86_64-w64-mingw32/bin/SDL2_ttf.dll"
+            "${SDL2_MIXER_DIR}/x86_64-w64-mingw32/bin/SDL2_mixer.dll"
+    )
+        if(EXISTS "${DLL}")
+            file(COPY "${DLL}" DESTINATION "${CMAKE_BINARY_DIR}")
+        else()
+            message(WARNING "DLL not found: ${DLL}")
+        endif()
+    endforeach()
+endif()
 
-# Копируем папку assets
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets
-        ${CMAKE_BINARY_DIR}/assets
-)
+# Копирование ресурсов
+if(EXISTS "${CMAKE_SOURCE_DIR}/assets")
+    file(COPY "${CMAKE_SOURCE_DIR}/assets" DESTINATION "${CMAKE_BINARY_DIR}")
+endif()

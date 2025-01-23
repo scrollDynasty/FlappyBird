@@ -4,10 +4,71 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <vector>
 #include <string>
+#include <map>
+#include <iostream>
 
 class Game {
+private:
+    // Константы
+    static const int SCREEN_WIDTH = 800;
+    static const int SCREEN_HEIGHT = 600;
+    static const int BIRD_WIDTH = 40;
+    static const int BIRD_HEIGHT = 40;
+    const float INITIAL_GRAVITY = 0.15f;        // Уменьшенная гравитация
+    const float INITIAL_JUMP_FORCE = -4.5f;     // Уменьшенная сила прыжка
+
+    // Состояния игры
+    enum GameState {
+        WAITING,
+        PLAYING,
+        GAME_OVER
+    };
+
+    // Структура для труб
+    struct Pipe {
+        SDL_Rect rect;
+        bool scored;
+    };
+
+    // Структура для аудио
+    struct AudioSystem {
+        Mix_Music* backgroundMusic;
+        std::map<std::string, Mix_Chunk*> soundEffects;
+        bool musicEnabled;
+        bool soundEnabled;
+        int musicVolume;
+        int soundVolume;
+    };
+
+    // SDL компоненты
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    SDL_Texture* birdTexture;
+    SDL_Texture* backgroundTexture;
+    SDL_Texture* pipeTexture;
+    SDL_Texture* groundTexture;
+    TTF_Font* font;
+
+    // Игровые объекты и состояния
+    SDL_Rect bird;
+    std::vector<Pipe> pipes;
+    AudioSystem audio;
+    bool isRunning;
+    float birdVelocity;
+    float birdAngle;
+    int score;
+    float scrollOffset;
+    GameState gameState;
+    Uint32 gameTime;
+    float gameSpeed;
+    Uint32 startTime;
+    float accelerationFactor;
+    float gravity;
+    float jumpForce;
+
 public:
     Game();
     ~Game();
@@ -20,59 +81,26 @@ public:
     bool running() const { return isRunning; }
 
 private:
-    enum GameState {
-        WAITING,
-        PLAYING,
-        GAME_OVER
-    };
-
-    struct Pipe {
-        SDL_Rect rect;
-        bool scored;
-    };
-
-    static const int SCREEN_WIDTH = 800;
-    static const int SCREEN_HEIGHT = 600;
-    static const int BIRD_WIDTH = 40;
-    static const int BIRD_HEIGHT = 40;
-    static constexpr float INITIAL_GRAVITY = 0.12f;
-    static constexpr float INITIAL_JUMP_FORCE = -4.0f;
-    static const int FONT_SIZE_LARGE = 36;
-    static const int FONT_SIZE_MEDIUM = 28;
-    static const int FONT_SIZE_SMALL = 24;
-
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    SDL_Texture* birdTexture;
-    SDL_Texture* backgroundTexture;
-    SDL_Texture* pipeTexture;
-    SDL_Texture* groundTexture;
-    TTF_Font* font;
-
-    SDL_Rect bird;
-    std::vector<Pipe> pipes;
-    bool isRunning;
-    float birdVelocity;
-    float birdAngle;
-    int score;
-    float scrollOffset;
-    GameState gameState;
-    Uint32 gameTime;
-    Uint32 startTime;
-    float gameSpeed;
-    float gravity;
-    float jumpForce;
-    float accelerationFactor;
-
     SDL_Texture* loadTexture(const std::string& path);
-    void jump();
     void createPipe();
     void updatePipes();
     bool checkCollision();
-    void renderText(const std::string& text, int x, int y, SDL_Color color);
+    void jump();
     void updateDifficulty();
-    void resetGame();
     void renderRoundedRect(int x, int y, int w, int h, int radius);
+    void renderText(const std::string& text, int x, int y, SDL_Color color);
+    void resetGame();
+
+    // Аудио функции
+    bool initAudio();
+    void loadAudio();
+    void playSound(const std::string& name);
+    void playMusic();
+    void stopMusic();
+    void toggleMusic();
+    void toggleSound();
+    void setMusicVolume(int volume);
+    void setSoundVolume(int volume);
 };
 
 #endif // FLAPPYBIRD_GAME_H

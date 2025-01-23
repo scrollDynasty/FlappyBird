@@ -1,1 +1,43 @@
-cmake-build-debug
+# CMake build directories
+cmake-build-debug/
+cmake-build-release/
+build/
+CMakeFiles/
+
+# IDE-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Compiled Object files
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Logs and databases
+*.log
+*.sqlite
+
+# OS generated files
+.DS_Store
+Thumbs.db

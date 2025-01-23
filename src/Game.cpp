@@ -36,8 +36,8 @@ Game::Game() :
     audio.backgroundMusic = nullptr;
     audio.musicEnabled = true;
     audio.soundEnabled = true;
-    audio.musicVolume = MIX_MAX_VOLUME / 5;  // 20% громкости
-    audio.soundVolume = MIX_MAX_VOLUME / 4;  // 25% громкости
+    audio.musicVolume = 0;  // Выключаем фоновую музыку
+    audio.soundVolume = MIX_MAX_VOLUME / 4;  // 25% громкости для звуковых эффектов
 }
 
 Game::~Game() {
@@ -153,7 +153,6 @@ void Game::handleEvents() {
         }
     }
 }
-
 void Game::update() {
     if (gameState == WAITING) {
         bird.y = SCREEN_HEIGHT / 2 + sin(SDL_GetTicks() / 500.0) * 30;
@@ -181,14 +180,23 @@ void Game::update() {
         birdAngle = std::min(birdAngle + 2.0f, 70.0f);
     }
 
+    // Проверка столкновений со стенами
     if (bird.y < 0) {
         bird.y = 0;
         birdVelocity = 0;
     }
+
+    // Проверка столкновения с землей
     if (bird.y + bird.h > SCREEN_HEIGHT - 100) {
         bird.y = SCREEN_HEIGHT - 100 - bird.h;
-        gameState = GAME_OVER;
-        playSound("die");
+        if (gameState == PLAYING) {
+            Mix_HaltChannel(-1);  // Останавливаем все текущие звуки
+            playSound("hit");     // Звук удара
+            SDL_Delay(100);       // Небольшая задержка
+            playSound("die");     // Звук смерти
+            gameState = GAME_OVER;
+        }
+        return;
     }
 
     // Обновление фона
@@ -204,16 +212,19 @@ void Game::update() {
 
     updatePipes();
 
-    if (checkCollision()) {
-        playSound("hit");
+    // Проверка столкновений с трубами
+    if (checkCollision() && gameState == PLAYING) {
+        Mix_HaltChannel(-1);  // Останавливаем все текущие звуки
+        playSound("hit");     // Немедленно проигрываем звук удара
         gameState = GAME_OVER;
     }
 }
+
 void Game::createPipe() {
     Pipe topPipe, bottomPipe;
 
     const int pipeWidth = 60;
-    const int gap = 220;  // Увеличенный промежуток между трубами
+    const int gap = 220;
     const int minHeight = 100;
     const int maxHeight = SCREEN_HEIGHT - gap - minHeight - 100;
 
@@ -239,13 +250,13 @@ void Game::updatePipes() {
     static int framesSinceLastPipe = 0;
     framesSinceLastPipe++;
 
-    if (framesSinceLastPipe >= 180) { // Увеличенный интервал между созданием труб
+    if (framesSinceLastPipe >= 180) {
         createPipe();
         framesSinceLastPipe = 0;
     }
 
     for (size_t i = 0; i < pipes.size(); i += 2) {
-        const int pipeSpeed = 2; // Уменьшенная фиксированная скорость труб
+        const int pipeSpeed = 2;
         pipes[i].rect.x -= pipeSpeed;
         pipes[i + 1].rect.x = pipes[i].rect.x;
 
@@ -375,17 +386,6 @@ void Game::jump() {
     }
 }
 
-void Game::updateDifficulty() {
-    float baseSpeed = 0.2f;
-    float maxSpeed = 0.6f;
-    float accelerationFactor = gameTime / 180000.0f;
-    float speedIncrease = std::cbrt(accelerationFactor) * 0.1f;
-
-    gameSpeed = std::min(baseSpeed + speedIncrease, maxSpeed);
-    gravity = INITIAL_GRAVITY * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
-    jumpForce = INITIAL_JUMP_FORCE * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
-}
-
 bool Game::initAudio() {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
         std::cout << "SDL_mixer initialization failed: " << Mix_GetError() << std::endl;
@@ -393,8 +393,8 @@ bool Game::initAudio() {
     }
 
     Mix_AllocateChannels(8);
-    Mix_Volume(-1, MIX_MAX_VOLUME / 4);
-    Mix_VolumeMusic(MIX_MAX_VOLUME / 5);
+    Mix_Volume(-1, MIX_MAX_VOLUME / 4);  // Громкость эффектов 25%
+    Mix_VolumeMusic(0);                  // Выключаем фоновую музыку
 
     loadAudio();
     return true;
@@ -431,7 +431,14 @@ void Game::playSound(const std::string& name) {
 
     auto it = audio.soundEffects.find(name);
     if (it != audio.soundEffects.end() && it->second) {
-        Mix_PlayChannel(-1, it->second, 0);
+        // Используем конкретный канал для каждого типа звука
+        int channel = -1;
+        if (name == "hit") channel = 0;
+        else if (name == "die") channel = 1;
+        else if (name == "score") channel = 2;
+        else if (name == "jump") channel = 3;
+
+        Mix_PlayChannel(channel, it->second, 0);
     }
 }
 
@@ -521,7 +528,10 @@ void Game::clean() {
         SDL_DestroyTexture(groundTexture);
         groundTexture = nullptr;
     }
-
+    if (groundTexture) {
+        SDL_DestroyTexture(groundTexture);
+        groundTexture = nullptr;
+    }
     if (font) {
         TTF_CloseFont(font);
         font = nullptr;
@@ -541,4 +551,19 @@ void Game::clean() {
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
+}
+
+void Game::updateDifficulty() {
+    float baseSpeed = 0.2f;             // Уменьшенная базовая скорость
+    float maxSpeed = 0.6f;              // Уменьшенная максимальная скорость
+    float accelerationFactor = gameTime / 180000.0f;  // Замедленное ускорение
+    float speedIncrease = std::cbrt(accelerationFactor) * 0.1f;
+
+    gameSpeed = std::min(baseSpeed + speedIncrease, maxSpeed);
+    gravity = INITIAL_GRAVITY * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
+    jumpForce = INITIAL_JUMP_FORCE * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
+}
+
+bool Game::isGameRunning() const {
+    return isRunning;
 }

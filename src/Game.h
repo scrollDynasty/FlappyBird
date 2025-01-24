@@ -16,8 +16,8 @@ public:
     static const int SCREEN_HEIGHT = 600;
     static const int BIRD_WIDTH = 40;
     static const int BIRD_HEIGHT = 30;
-    static constexpr float INITIAL_GRAVITY = 0.3f;
-    static constexpr float INITIAL_JUMP_FORCE = -6.0f;
+    static constexpr float INITIAL_GRAVITY = 0.15f;
+    static constexpr float INITIAL_JUMP_FORCE = -4.0f;
 
     enum GameState {
         WAITING,

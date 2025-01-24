@@ -7,7 +7,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Используем правильное имя метода isGameRunning() вместо running()
     while (game.isGameRunning()) {
         game.handleEvents();
         game.update();

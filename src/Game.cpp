@@ -20,7 +20,7 @@ Game::Game() :
     scrollOffset(0),
     gameState(WAITING),
     gameTime(0),
-    gameSpeed(0.2f),    // Уменьшенная начальная скорость
+    gameSpeed(0.2f),
     startTime(0),
     accelerationFactor(0.0f),
     gravity(INITIAL_GRAVITY),
@@ -171,13 +171,13 @@ void Game::update() {
 
     // Обновление физики птицы
     birdVelocity += gravity;
-    birdVelocity = std::min(birdVelocity, 4.0f);
+    birdVelocity = std::min(birdVelocity, 2.5f);
     bird.y += static_cast<int>(birdVelocity);
 
     if (birdVelocity < 0) {
         birdAngle = -25.0f;
     } else {
-        birdAngle = std::min(birdAngle + 2.0f, 70.0f);
+        birdAngle = std::min(birdAngle + 1.0f, 70.0f);
     }
 
     // Проверка столкновений со стенами
@@ -380,7 +380,7 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
 
 void Game::jump() {
     if (gameState == PLAYING) {
-        birdVelocity = jumpForce;
+        birdVelocity = std::max(jumpForce, -4.0f);  // Добавили ограничение
         birdAngle = -25.0f;
         playSound("jump");
     }
@@ -555,13 +555,13 @@ void Game::clean() {
 
 void Game::updateDifficulty() {
     float baseSpeed = 0.2f;             // Уменьшенная базовая скорость
-    float maxSpeed = 0.6f;              // Уменьшенная максимальная скорость
-    float accelerationFactor = gameTime / 180000.0f;  // Замедленное ускорение
-    float speedIncrease = std::cbrt(accelerationFactor) * 0.1f;
+    float maxSpeed = 0.4f;              // Уменьшенная максимальная скорость
+    float accelerationFactor = gameTime / 240000.0f;  // Замедленное ускорение
+    float speedIncrease = std::cbrt(accelerationFactor) * 0.08f;
 
     gameSpeed = std::min(baseSpeed + speedIncrease, maxSpeed);
-    gravity = INITIAL_GRAVITY * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
-    jumpForce = INITIAL_JUMP_FORCE * (1.0f + (gameSpeed - baseSpeed) * 0.03f);
+    gravity = INITIAL_GRAVITY * (1.0f + (gameSpeed - baseSpeed) * 0.02f);
+    jumpForce = INITIAL_JUMP_FORCE * (1.0f + (gameSpeed - baseSpeed) * 0.02f);
 }
 
 bool Game::isGameRunning() const {
